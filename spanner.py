@@ -1,7 +1,5 @@
 import jellyfish
 
-import jellyfish
-
 def span_matching(review: str, span: str, method: str = "lev", log: bool = True):
     review_words = review.split(" ")
     span_words = span.split(" ")
@@ -118,89 +116,128 @@ def span_matching(review: str, span: str, method: str = "lev", log: bool = True)
     
     return min_distance, review[min_span_start:min_span_end].strip(), min_span_start, min_span_end
 
-
-def expand_span(review, start_idx, end_idx, log=True): 
-    # Define stopping points
-    stopping_points = {'.', '!', '?', ';', '\n'}
-    
-    # Split review into words and spaces to handle word boundaries
-    words = review.split(" ")
-    total_word_count = len(words)
-    
-    if log:
-        print(f"Words: {words}")
-        print(f"Total word count: {total_word_count}")
-    
-    # Find the word index of the start and end positions
-    char_count = 0
-    word_start_idx = word_end_idx = 0
-    for i, word in enumerate(words):
-        char_count += len(word)
-        if char_count >= start_idx and word_start_idx == 0:
-            word_start_idx = i
-        if char_count >= end_idx:
-            word_end_idx = i - 1
-            break
-        char_count += 1
-
-    if log:
-        print(f"Word start index: {word_start_idx}")
-        print(f"Word end index: {word_end_idx}")
-        print(f"Span Starting word: {words[word_start_idx]}")
-        print(f"Span Ending word: {words[word_end_idx]}")
-    
-    # Calculate the number of words to expand on both sides
-    expansion_word_count = max(1, total_word_count // 4)
-    if log:
-        print(f"Exapnsion word count: {expansion_word_count}")
-
-    # Initialize the new start and end indices
-    new_word_start_idx = word_start_idx
-    new_word_end_idx = word_end_idx
-
-    # Expand backwards
-    for _ in range(expansion_word_count):
-        if new_word_start_idx == 0:
-            if log:
-                print(f"Start of review reached!")
-            break
-        new_word_start_idx -= 1
+def expand_span(review, start_idx, end_idx, version=1, max_additional_words=10, log=True):
+    if version == 1: 
+        # Define stopping points
+        stopping_points = {'.', '!', '?', ';', '\n'}
+        
+        # Split review into words and spaces to handle word boundaries
+        words = review.split(" ")
+        total_word_count = len(words)
+        
         if log:
-            print(f"Checking word: {words[new_word_start_idx]}")
-        if any(p in words[new_word_start_idx] for p in stopping_points):
-            new_word_start_idx += 1
-            if log:
-                print(f"This word has a stopping point: {words[new_word_start_idx]}")
-            break
+            print(f"Words: {words}")
+            print(f"Total word count: {total_word_count}")
+        
+        # Find the word index of the start and end positions
+        char_count = 0
+        word_start_idx = word_end_idx = 0
+        for i, word in enumerate(words):
+            char_count += len(word)
+            if char_count >= start_idx and word_start_idx == 0:
+                word_start_idx = i
+            if char_count >= end_idx:
+                word_end_idx = i - 1
+                break
+            char_count += 1
 
-    special_break = False
-    
-    if any(p in words[new_word_end_idx] for p in stopping_points):
-        new_word_end_idx += 1
-        special_break = True
-    
-    # Expand forwards
-    for _ in range(expansion_word_count):
-        if special_break:
-            break
-        if new_word_end_idx >= len(words) - 1:
-            if log:
-                print(f"End of review reached!")
-            break
-        new_word_end_idx += 1
         if log:
-            print(f"Checking word: {words[new_word_end_idx]}")
+            print(f"Word start index: {word_start_idx}")
+            print(f"Word end index: {word_end_idx}")
+            print(f"Span Starting word: {words[word_start_idx]}")
+            print(f"Span Ending word: {words[word_end_idx]}")
+        
+        # Calculate the number of words to expand on both sides
+        expansion_word_count = max(1, total_word_count // 4)
+        if log:
+            print(f"Exapnsion word count: {expansion_word_count}")
+
+        # Initialize the new start and end indices
+        new_word_start_idx = word_start_idx
+        new_word_end_idx = word_end_idx
+
+        # Expand backwards
+        for _ in range(expansion_word_count):
+            if new_word_start_idx == 0:
+                if log:
+                    print(f"Start of review reached!")
+                break
+            new_word_start_idx -= 1
+            if log:
+                print(f"Checking word: {words[new_word_start_idx]}")
+            if any(p in words[new_word_start_idx] for p in stopping_points):
+                new_word_start_idx += 1
+                if log:
+                    print(f"This word has a stopping point: {words[new_word_start_idx]}")
+                break
+
+        special_break = False
+        
         if any(p in words[new_word_end_idx] for p in stopping_points):
-            if log:
-                print(f"This word has a stopping point: {words[new_word_end_idx]}")
             new_word_end_idx += 1
-            break
-    if log:
-        print(f"New word start index: {new_word_start_idx}")
-        print(f"New word end index: {new_word_end_idx}")
+            special_break = True
+        
+        # Expand forwards
+        for _ in range(expansion_word_count):
+            if special_break:
+                break
+            if new_word_end_idx >= len(words) - 1:
+                if log:
+                    print(f"End of review reached!")
+                break
+            new_word_end_idx += 1
+            if log:
+                print(f"Checking word: {words[new_word_end_idx]}")
+            if any(p in words[new_word_end_idx] for p in stopping_points):
+                if log:
+                    print(f"This word has a stopping point: {words[new_word_end_idx]}")
+                new_word_end_idx += 1
+                break
+        if log:
+            print(f"New word start index: {new_word_start_idx}")
+            print(f"New word end index: {new_word_end_idx}")
 
-    # Convert word indices back to character indices
-    new_start_idx = sum(len(words[i]) + 1 for i in range(new_word_start_idx))
-    new_end_idx = sum(len(words[i]) + 1 for i in range(new_word_end_idx)) - 1
+        # Convert word indices back to character indices
+        new_start_idx = sum(len(words[i]) + 1 for i in range(new_word_start_idx))
+        new_end_idx = sum(len(words[i]) + 1 for i in range(new_word_end_idx)) - 1
 
-    return review[new_start_idx: new_end_idx].strip(), new_start_idx, new_end_idx
+        return review[new_start_idx: new_end_idx].strip(), new_start_idx, new_end_idx 
+    elif version == 2:
+        substring = review[start_idx:end_idx]
+        # Find the starting index of the substring in the full string
+        start_index = review.find(substring)
+        if start_index == -1:
+            return ""
+        
+        # Count the number of words in the substring
+        words_in_substring = len(substring.split())
+
+        # Initialize indices to expand the substring to full sentences
+        left_index = start_index
+        right_index = start_index + len(substring)
+        
+        # Expand to the left to the beginning of the sentence or the start of the string
+        while left_index > 0 and review[left_index - 1] != '.':
+            left_index -= 1
+        
+        # Expand to the right to the end of the sentence or the end of the string
+        while right_index < len(review) and review[right_index] != '.':
+            right_index += 1
+        
+        # Include the character right after the period to complete the sentence
+        if right_index < len(review) and review[right_index] == '.':
+            right_index += 1
+        
+        # Extract the context
+        context = review[left_index:right_index].strip()
+        words_in_context = len(context.split())
+        
+        # Ensure that the context does not exceed the substring length by more than 10 words
+        if words_in_context > words_in_substring + max_additional_words:
+            # Split the context into words and reconstruct to fit the word limit
+            words_list = context.split()
+            if words_in_substring + max_additional_words < len(words_list):
+                end_index = words_in_substring + max_additional_words
+                context = ' '.join(words_list[:end_index])
+        
+        return context
