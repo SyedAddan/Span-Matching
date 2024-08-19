@@ -1,6 +1,7 @@
 import jellyfish
+from typing import Optional
 
-def span_matching(review: str, span: str, method: str = "lev", log: bool = True):
+def span_matching(review: str, span: str, method: str = "lev", log: bool = False) -> tuple[int, str, int, int]:
     review_words = review.split(" ")
     span_words = span.split(" ")
     
@@ -116,7 +117,7 @@ def span_matching(review: str, span: str, method: str = "lev", log: bool = True)
     
     return min_distance, review[min_span_start:min_span_end].strip(), min_span_start, min_span_end
 
-def expand_span(review, start_idx, end_idx, version=1, max_additional_words=10, log=True):
+def expand_span(review: str, start_idx: int, end_idx: int, version: int = 1, max_additional_words: int = 10, log: bool = False) -> Optional[str | tuple[str, int, int]]:
     if version == 1: 
         # Define stopping points
         stopping_points = {'.', '!', '?', ';', '\n'}
